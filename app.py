@@ -2,10 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime
+import json
+import os
 
 # Page config
 st.set_page_config(
-    page_title="PHHS Bowling Tracker",
+    page_title="🎳 PHHS Bowling Tracker",
     page_icon="🎳",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -13,66 +15,152 @@ st.set_page_config(
 
 # Title
 st.title("🎳 PHHS Unified Bowling Team")
-st.subheader("Performance Hub")
+st.subheader("🏆 Performance Hub")
 
-# Initialize session state
-if "players" not in st.session_state:
-    st.session_state.players = {
-        "Taylor": {
-            "scores": [155, 162, 148, 171, 159],
-            "dates": ["October 01, 2025", "October 08, 2025", "October 15, 2025", "October 22, 2025", "October 29, 2025"],
-            "days_at_team": 15
-        },
-        "Tom": {
-            "scores": [148, 151, 160, 155, 158],
-            "dates": ["October 01, 2025", "October 08, 2025", "October 15, 2025", "October 22, 2025", "October 29, 2025"],
-            "days_at_team": 15
-        }
+# ============ DATA PERSISTENCE ============
+DATA_FILE = "bowling_data.json"
+
+def save_data():
+    """Save all data to JSON file"""
+    data = {
+        "players": st.session_state.players,
+        "announcements": st.session_state.announcements
     }
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=4)
 
-if "announcements" not in st.session_state:
-    st.session_state.announcements = [
-        {
-            "title": "Welcome to the Bowling Team!",
-            "content": "We are excited to have you as part of our team. Let's work together to achieve our goals.",
-            "date": "January 06, 2025"
+def load_data():
+    """Load data from JSON file if it exists"""
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r") as f:
+                data = json.load(f)
+                return data["players"], data["announcements"]
+        except:
+            return None, None
+    return None, None
+
+# Initialize session state with persistent data
+if "players" not in st.session_state:
+    players_data, announcements_data = load_data()
+    
+    if players_data:
+        st.session_state.players = players_data
+        st.session_state.announcements = announcements_data
+    else:
+        st.session_state.players = {
+            "Taylor": {
+                "scores": [155, 162, 148, 171, 159],
+                "dates": ["October 01, 2025", "October 08, 2025", "October 15, 2025", "October 22, 2025", "October 29, 2025"],
+                "days_at_team": 15
+            },
+            "Tom": {
+                "scores": [148, 151, 160, 155, 158],
+                "dates": ["October 01, 2025", "October 08, 2025", "October 15, 2025", "October 22, 2025", "October 29, 2025"],
+                "days_at_team": 15
+            }
         }
-    ]
+        st.session_state.announcements = [
+            {
+                "title": "Welcome to the Bowling Team!",
+                "content": "We are excited to have you as part of our team. Let's work together to achieve our goals.",
+                "date": "January 06, 2025"
+            }
+        ]
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "font_size" not in st.session_state:
+    st.session_state.font_size = 1.0
+
+# ============ HELPER FUNCTIONS ============
+
+def detect_milestones(player_name, scores, dates):
+    """Auto-detect achievements based on score history"""
+    milestones = []
+    
+    if not scores:
+        return milestones
+    
+    # First game over 100
+    if any(score > 100 for score in scores):
+        milestones.append("🎯 First game over 100!")
+    
+    # Perfect game (300)
+    if 300 in scores:
+        milestones.append("🔥 Perfect Game!")
+    
+    # Improving trend
+    if len(scores) >= 3:
+        recent_three = scores[-3:]
+        if recent_three[0] < recent_three[1] < recent_three[2]:
+            milestones.append("📈 3-Game Improvement Streak!")
+        
+        # Check for consistency
+        if len(scores) >= 5:
+            recent_five = scores[-5:]
+            avg = sum(recent_five) / len(recent_five)
+            if all(abs(s - avg) <= 10 for s in recent_five):
+                milestones.append("⭐ Consistent Performer!")
+    
+    # High score achievement
+    if max(scores) >= 200:
+        milestones.append("🏅 Elite Scorer!")
+    
+    # Century mark (100+ average)
+    if len(scores) >= 3:
+        avg = sum(scores) / len(scores)
+        if avg >= 150:
+            milestones.append("👑 Century Achiever!")
+    
+    # Games played milestone
+    if len(scores) == 10:
+        milestones.append("🎮 10 Games Milestone!")
+    elif len(scores) == 5:
+        milestones.append("🎮 5 Games Milestone!")
+    
+    return milestones
+
 # Sidebar for navigation
 st.sidebar.header("📊 Navigation")
-page = st.sidebar.radio("Select Page", ["Dashboard", "Manage Data", "Settings"])
+page = st.sidebar.radio("Select Page", ["🏠 Dashboard", "🔐 Coach Panel", "⚙️ Settings"])
 
 # ============ DASHBOARD PAGE ============
-if page == "Dashboard":
+if page == "🏠 Dashboard":
     
     # Team Highlights & Stats
-    st.header("🏆 Team Highlights")
-    col1, col2, col3, col4 = st.columns(4)
+    st.header("🏆 Team Highlights & Stats")
+    col1, col2, col3 = st.columns(3)
     
     all_scores = []
     for player in st.session_state.players.values():
         all_scores.extend(player["scores"])
     
     with col1:
-        st.metric("Total Players", len(st.session_state.players))
+        st.metric("👥 Total Players", len(st.session_state.players))
     with col2:
-        st.metric("Avg Team Score", f"{sum(all_scores)/len(all_scores):.1f}")
+        st.metric("📊 Avg Team Score", f"{sum(all_scores)/len(all_scores):.1f}" if all_scores else "N/A")
     with col3:
-        st.metric("Highest Score", max(all_scores))
-    with col4:
-        st.metric("Lowest Score", min(all_scores))
+        st.metric("🏅 Highest Score", max(all_scores) if all_scores else "N/A")
     
     st.divider()
     
     # Player Score Progress
-    st.header("📈 Player Score Progress")
+    st.header("📈 Player Score Progress & Achievements")
     
     for player_name, player_data in st.session_state.players.items():
-        with st.expander(f"📊 {player_name} - {len(player_data['scores'])} games"):
+        with st.expander(f"📊 {player_name} - 🎮 {len(player_data['scores'])} games"):
+            
+            # Personal Milestones for this player
+            milestones = detect_milestones(player_name, player_data["scores"], player_data["dates"])
+            
+            if milestones:
+                st.subheader("🎖️ Personal Milestones")
+                for milestone in milestones:
+                    st.success(milestone)
+            
+            # Score trend chart
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                 x=player_data["dates"],
@@ -83,164 +171,273 @@ if page == "Dashboard":
                 marker=dict(size=10)
             ))
             fig.update_layout(
-                title=f"{player_name}'s Scoring Trend",
-                xaxis_title="Date",
-                yaxis_title="Score",
+                title=f"{player_name}'s 📈 Scoring Trend",
+                xaxis_title="📅 Date",
+                yaxis_title="🎳 Score",
                 height=400,
                 hovermode='x unified'
             )
             st.plotly_chart(fig, use_container_width=True)
             
-            avg = sum(player_data["scores"]) / len(player_data["scores"])
-            st.write(f"**Average Score:** {avg:.1f}")
-            st.write(f"**Days at Team:** {player_data['days_at_team']}")
+            # Stats
+            col1, col2, col3 = st.columns(3)
+            avg = sum(player_data["scores"]) / len(player_data["scores"]) if player_data["scores"] else 0
+            with col1:
+                st.metric("📊 Average Score", f"{avg:.1f}")
+            with col2:
+                st.metric("🔥 Best Score", max(player_data["scores"]) if player_data["scores"] else "N/A")
+            with col3:
+                st.metric("📅 Days at Team", player_data['days_at_team'])
     
     st.divider()
     
-    # Announcements (moved below player progress)
-    st.header("📢 Announcements")
-    for announcement in st.session_state.announcements:
-        st.info(f"**{announcement['title']}** *(Posted: {announcement['date']})*\n\n{announcement['content']}")
-    
-    st.divider()
-    
-    # Personal Milestones
-    st.header("🎖️ Personal Milestones")
-    if len(st.session_state.players) == 0:
-        st.write("No players added yet")
+    # Announcements
+    st.header("📢 Announcements & Updates")
+    if st.session_state.announcements:
+        for announcement in st.session_state.announcements:
+            st.info(f"📌 **{announcement['title']}** *(Posted: {announcement['date']})*\n\n{announcement['content']}")
     else:
-        for player_name, player_data in st.session_state.players.items():
-            avg_score = sum(player_data["scores"]) / len(player_data["scores"])
-            highest = max(player_data["scores"])
-            st.write(f"**{player_name}**")
-            st.write(f"- Average Score: {avg_score:.1f}")
-            st.write(f"- Personal Best: {highest}")
-            st.write("")
+        st.write("📭 No announcements yet")
+    
+    st.divider()
+    
+    # Team Achievements
+    st.header("🏅 Team Achievements")
+    st.write("🎯 Total Combined Games: " + str(len(all_scores)))
+    st.write("📊 Team Average: " + (f"{sum(all_scores)/len(all_scores):.1f}" if all_scores else "N/A"))
     
     st.divider()
     
     # All Player Scores Table
     st.header("📋 All Player Scores")
-    player_list = ["All Players"] + list(st.session_state.players.keys())
-    selected_player = st.selectbox("Choose a player to view:", player_list)
+    player_list = ["👥 All Players"] + list(st.session_state.players.keys())
+    selected_player = st.selectbox("🔍 Choose a player to view:", player_list)
     
-    if selected_player == "All Players":
+    if selected_player == "👥 All Players":
         all_data = []
         for name, data in st.session_state.players.items():
             for date, score in zip(data["dates"], data["scores"]):
-                all_data.append({"Player": name, "Date": date, "Score": score})
+                all_data.append({"🎳 Player": name, "📅 Date": date, "📊 Score": score})
         df = pd.DataFrame(all_data)
         st.dataframe(df, use_container_width=True)
     else:
         player_data = st.session_state.players[selected_player]
         df = pd.DataFrame({
-            "Date": player_data["dates"],
-            "Score": player_data["scores"]
+            "📅 Date": player_data["dates"],
+            "📊 Score": player_data["scores"]
         })
         st.dataframe(df, use_container_width=True)
-    
-    st.divider()
-    
-    # Season Summary
-    st.header("📅 Season Summary")
-    st.write(f"**Total Games Played:** {len(all_scores)}")
-    st.write(f"**Season Average:** {sum(all_scores)/len(all_scores):.1f}")
-    st.write(f"**Best Performance:** {max(all_scores)}")
 
-# ============ MANAGE DATA PAGE ============
-elif page == "Manage Data":
+# ============ COACH PANEL PAGE ============
+elif page == "🔐 Coach Panel":
     st.header("🔐 Coach Panel - Password Required")
     
-    password = st.text_input("Enter coach password:", type="password", key="coach_password")
+    password = st.text_input("🔑 Enter coach password:", type="password", key="coach_password")
     
     if password == "bowling2025":  # Change this password
-        st.success("✅ Access granted!")
+        st.success("✅ Access granted! 🎳")
         
-        tab1, tab2, tab3 = st.tabs(["Add/Edit Scores", "Announcements", "Players"])
+        tab1, tab2, tab3 = st.tabs(["📊 Add/Edit Scores", "📢 Manage Announcements", "👥 Manage Players"])
         
         # TAB 1: Add/Edit Scores
         with tab1:
-            st.subheader("📊 Add or Edit Scores")
+            st.subheader("📊 Score Management")
             
-            player_name = st.selectbox("Select Player:", list(st.session_state.players.keys()))
+            player_name = st.selectbox("🎳 Select Player:", list(st.session_state.players.keys()), key="score_player_select")
             
             if player_name:
+                # Display existing scores
+                st.write("### 📋 Existing Scores:")
+                player_data = st.session_state.players[player_name]
+                
+                score_df = pd.DataFrame({
+                    "📅 Date": player_data["dates"],
+                    "📊 Score": player_data["scores"],
+                    "🔢 Index": range(len(player_data["scores"]))
+                })
+                st.dataframe(score_df, use_container_width=True)
+                
+                # Delete score
+                st.write("### 🗑️ Delete a Score:")
+                score_to_delete = st.number_input("🔢 Enter score index to delete:", min_value=0, max_value=len(player_data["scores"])-1 if player_data["scores"] else 0, key="delete_score_index")
+                
+                if st.button("🗑️ Delete Selected Score"):
+                    if 0 <= score_to_delete < len(player_data["scores"]):
+                        player_data["scores"].pop(score_to_delete)
+                        player_data["dates"].pop(score_to_delete)
+                        save_data()
+                        st.success(f"✅ Score deleted!")
+                        st.rerun()
+                
+                st.divider()
+                
+                # Add new score
+                st.write("### ➕ Add New Score:")
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    new_score = st.number_input("Score:", min_value=0, max_value=300)
+                    new_score = st.number_input("📊 Score:", min_value=0, max_value=300, key="new_score_input")
                 with col2:
-                    new_date = st.date_input("Date:", key="manage_data_score_date")
+                    new_date = st.date_input("📅 Date:", key="manage_data_score_date")
                 
                 if st.button("➕ Add Score"):
                     st.session_state.players[player_name]["scores"].append(new_score)
                     st.session_state.players[player_name]["dates"].append(new_date.strftime("%B %d, %Y"))
-                    st.success(f"✅ Score added for {player_name}!")
+                    save_data()
+                    st.success(f"✅ Score added for {player_name}! 🎉")
                     st.balloons()
+                    st.rerun()
         
         # TAB 2: Announcements
         with tab2:
-            st.subheader("📢 Manage Announcements")
+            st.subheader("📢 Announcement Management")
             
-            announcement_title = st.text_input("Announcement Title:")
-            announcement_content = st.text_area("Announcement Content:")
-            announcement_date = st.date_input("Date:", key="manage_data_announcement_date")
+            # View & Edit/Delete existing announcements
+            st.write("### 📋 Existing Announcements:")
             
-            if st.button("➕ Post Announcement"):
-                st.session_state.announcements.append({
-                    "title": announcement_title,
-                    "content": announcement_content,
-                    "date": announcement_date.strftime("%B %d, %Y")
-                })
-                st.success("✅ Announcement posted!")
-                st.balloons()
+            if st.session_state.announcements:
+                for idx, announcement in enumerate(st.session_state.announcements):
+                    with st.expander(f"📌 {announcement['title']} - {announcement['date']}"):
+                        st.write(f"**Content:** {announcement['content']}")
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button(f"✏️ Edit", key=f"edit_ann_{idx}"):
+                                st.session_state[f"editing_announcement_{idx}"] = True
+                        with col2:
+                            if st.button(f"🗑️ Delete", key=f"delete_ann_{idx}"):
+                                st.session_state.announcements.pop(idx)
+                                save_data()
+                                st.success("✅ Announcement deleted!")
+                                st.rerun()
+                        
+                        # Edit form
+                        if st.session_state.get(f"editing_announcement_{idx}", False):
+                            st.write("### ✏️ Edit Announcement:")
+                            edit_title = st.text_input("📌 Title:", value=announcement['title'], key=f"edit_title_{idx}")
+                            edit_content = st.text_area("📝 Content:", value=announcement['content'], key=f"edit_content_{idx}")
+                            
+                            if st.button("💾 Save Changes", key=f"save_edit_{idx}"):
+                                st.session_state.announcements[idx]["title"] = edit_title
+                                st.session_state.announcements[idx]["content"] = edit_content
+                                save_data()
+                                st.success("✅ Announcement updated!")
+                                st.session_state[f"editing_announcement_{idx}"] = False
+                                st.rerun()
+            else:
+                st.write("📭 No announcements yet")
+            
+            st.divider()
+            
+            # Post new announcement
+            st.write("### ➕ Post New Announcement:")
+            announcement_title = st.text_input("📌 Announcement Title:", key="new_ann_title")
+            announcement_content = st.text_area("📝 Announcement Content:", key="new_ann_content")
+            announcement_date = st.date_input("📅 Date:", key="manage_data_announcement_date")
+            
+            if st.button("📢 Post Announcement"):
+                if announcement_title and announcement_content:
+                    st.session_state.announcements.append({
+                        "title": announcement_title,
+                        "content": announcement_content,
+                        "date": announcement_date.strftime("%B %d, %Y")
+                    })
+                    save_data()
+                    st.success("✅ Announcement posted! 🎉")
+                    st.balloons()
+                    st.rerun()
+                else:
+                    st.error("⚠️ Please fill in all fields!")
         
         # TAB 3: Players
         with tab3:
-            st.subheader("👥 Manage Players")
+            st.subheader("👥 Player Management")
             
             col1, col2 = st.columns(2)
             
             with col1:
-                new_player_name = st.text_input("Add new player:")
+                st.write("### ➕ Add New Player:")
+                new_player_name = st.text_input("👤 Add new player:", key="new_player_input")
                 if st.button("➕ Add Player"):
-                    if new_player_name not in st.session_state.players:
+                    if new_player_name and new_player_name not in st.session_state.players:
                         st.session_state.players[new_player_name] = {
                             "scores": [],
                             "dates": [],
                             "days_at_team": 0
                         }
-                        st.success(f"✅ {new_player_name} added!")
+                        save_data()
+                        st.success(f"✅ {new_player_name} added! 🎉")
                         st.balloons()
+                        st.rerun()
+                    elif new_player_name in st.session_state.players:
+                        st.error("⚠️ Player already exists!")
             
             with col2:
-                player_to_remove = st.selectbox("Remove player:", list(st.session_state.players.keys()))
-                if st.button("🗑️ Remove Player"):
-                    del st.session_state.players[player_to_remove]
-                    st.success(f"🗑️ {player_to_remove} has been removed.")
-                    st.balloons()
+                st.write("### 🗑️ Remove Player:")
+                if st.session_state.players:
+                    player_to_remove = st.selectbox("👤 Remove player:", list(st.session_state.players.keys()), key="remove_player_select")
+                    if st.button("🗑️ Remove Player"):
+                        del st.session_state.players[player_to_remove]
+                        save_data()
+                        st.success(f"🗑️ {player_to_remove} has been removed.")
+                        st.balloons()
+                        st.rerun()
     
     elif password != "":
-        st.error("❌ Incorrect password!")
+        st.error("❌ Incorrect password! 🔒")
 
 # ============ SETTINGS PAGE ============
-elif page == "Settings":
-    st.header("⚙️ Settings")
+elif page == "⚙️ Settings":
+    st.header("⚙️ Settings & Preferences")
+    st.write("*Note: These settings are only active for your current session. Changes reset when you close or refresh the app.*")
     
     col1, col2 = st.columns(2)
+    
     with col1:
-        st.subheader("📅 Date Range Settings")
-        start_date = st.date_input("Start Date:", key="settings_start_date")
-        end_date = st.date_input("End Date:", key="settings_end_date")
+        st.subheader("📝 Font Size Control")
+        st.write("*Adjust text size for this session only*")
+        font_size = st.slider("🔤 Font Size:", min_value=0.8, max_value=1.5, step=0.1, value=st.session_state.font_size, key="font_size_slider")
+        st.session_state.font_size = font_size
+        st.success(f"✅ Font size set to {font_size:.1f}x")
     
     with col2:
-        st.subheader("👥 Team Settings")
-        team_name = st.text_input("Team Name:", value="PHHS Bowling Team", key="settings_team_name")
-        max_players = st.number_input("Max Players:", min_value=1, value=20, key="settings_max_players")
+        st.subheader("📅 Date Range Settings")
+        st.write("*Set your preferred date range (session only)*")
+        start_date = st.date_input("📆 Start Date:", key="settings_start_date")
+        end_date = st.date_input("📆 End Date:", key="settings_end_date")
+        st.info(f"📅 Range: {start_date} to {end_date}")
     
-    if st.button("💾 Save Settings"):
-        st.success("✅ Settings saved!")
+    st.divider()
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("👥 Team Settings")
+        team_name = st.text_input("🎳 Team Name:", value="PHHS Bowling Team", key="settings_team_name")
+        max_players = st.number_input("👥 Max Players:", min_value=1, value=20, key="settings_max_players")
+    
+    with col2:
+        st.subheader("🎨 Display Preferences")
+        show_emojis = st.checkbox("🎭 Show Emojis in UI", value=True, key="show_emojis")
+        show_animations = st.checkbox("✨ Show Animations", value=True, key="show_animations")
+    
+    st.divider()
+    
+    if st.button("💾 Save Session Settings"):
+        st.success("✅ Session settings saved! ⚙️")
+        st.info("ℹ️ These settings will reset when you refresh or close the app.")
+
+# Apply custom CSS for font size
+if st.session_state.get("font_size", 1.0) != 1.0:
+    font_size = st.session_state.font_size
+    st.markdown(f"""
+        <style>
+            * {{
+                font-size: {font_size}em !important;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
 
 # Footer
 st.divider()
-st.caption("Created by Sakshi | PHHS Unified Bowling Team")
+st.caption("✨ Created by Sakshi | 🏆 PHHS Unified Bowling Team | 🎳 Keep Rolling!")
