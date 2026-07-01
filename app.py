@@ -443,7 +443,6 @@ elif page == "⚙️ Settings":
         st.subheader("📊 Current Team Settings")
         st.write(f"🎳 **Team Name:** {st.session_state.team_settings.get('team_name', 'PHHS Bowling Team')}")
         st.write(f"👥 **Max Players:** {st.session_state.team_settings.get('max_players', 20)}")
-        st.info("💡 To change team settings, use the Coach Panel (Tab 4: Team Settings)")
     
     st.divider()
     
@@ -453,84 +452,7 @@ elif page == "⚙️ Settings":
     
     st.divider()
     
-    # Future Feature Ideas
-    st.header("💡 Upcoming Features & Ideas")
-    st.write("""
-    ### 🚀 Features That Could Be Added Later:
-    
-    1. **📊 Advanced Statistics**
-       - Win/Loss streaks analysis
-       - Score distribution charts
-       - Comparison graphs between players
-       - Monthly/Seasonal trends
-    
-    2. **🏆 Leaderboard System**
-       - Global rankings
-       - Monthly top scorers
-       - Achievement badges
-       - Player tiers/levels
-    
-    3. **👥 Team Challenges**
-       - Weekly bowling challenges
-       - Tournament mode
-       - Team vs Team competitions
-       - Friendly challenges between players
-    
-    4. **🎯 Goal Setting**
-       - Personal score targets
-       - Team goals
-       - Goal tracking with reminders
-       - Achievement unlocks
-    
-    5. **📱 Mobile Responsiveness**
-       - Better mobile layout
-       - Native mobile app
-       - Push notifications
-    
-    6. **📈 Performance Insights**
-       - AI-powered analysis
-       - Improvement recommendations
-       - Weak area detection
-       - Personalized coaching tips
-    
-    7. **🎮 Gamification**
-       - XP system for achievements
-       - Daily/Weekly quests
-       - Rewards system
-       - Player cards/profiles
-    
-    8. **💬 Social Features**
-       - Player messaging
-       - Team chat
-       - Comment on scores
-       - Share achievements
-    
-    9. **📅 Scheduling**
-       - Schedule practice sessions
-       - Tournament calendar
-       - Team availability tracker
-       - Game reminders
-    
-    10. **📸 Media**
-        - Photo gallery of games
-        - Video highlights
-        - Game replays
-        - Achievement celebrations
-    
-    11. **🔐 Advanced Admin**
-        - Multi-level user roles
-        - Detailed activity logs
-        - Data backup/export
-        - Custom reports
-    
-    12. **💾 Data Management**
-        - Cloud storage integration
-        - Automatic backups
-        - Data export (CSV/PDF)
-        - Historical data analysis
-    """)
-
-# Apply custom CSS for font size
+    # Apply custom CSS for font size
 if st.session_state.get("font_size", 1.0) != 1.0:
     font_size = st.session_state.font_size
     st.markdown(f"""
