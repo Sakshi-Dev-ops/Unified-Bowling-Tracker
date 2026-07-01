@@ -151,7 +151,7 @@ if page == "Dashboard":
 elif page == "Manage Data":
     st.header("🔐 Coach Panel - Password Required")
     
-    password = st.text_input("Enter coach password:", type="password")
+    password = st.text_input("Enter coach password:", type="password", key="coach_password")
     
     if password == "bowling2025":  # Change this password
         st.success("✅ Access granted!")
@@ -170,7 +170,7 @@ elif page == "Manage Data":
                 with col1:
                     new_score = st.number_input("Score:", min_value=0, max_value=300)
                 with col2:
-                    new_date = st.date_input("Date:")
+                    new_date = st.date_input("Date:", key="manage_data_score_date")
                 
                 if st.button("➕ Add Score"):
                     st.session_state.players[player_name]["scores"].append(new_score)
@@ -184,7 +184,7 @@ elif page == "Manage Data":
             
             announcement_title = st.text_input("Announcement Title:")
             announcement_content = st.text_area("Announcement Content:")
-            announcement_date = st.date_input("Date:")
+            announcement_date = st.date_input("Date:", key="manage_data_announcement_date")
             
             if st.button("➕ Post Announcement"):
                 st.session_state.announcements.append({
@@ -226,7 +226,20 @@ elif page == "Manage Data":
 # ============ SETTINGS PAGE ============
 elif page == "Settings":
     st.header("⚙️ Settings")
-    st.write("General app settings coming soon!")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("📅 Date Range Settings")
+        start_date = st.date_input("Start Date:", key="settings_start_date")
+        end_date = st.date_input("End Date:", key="settings_end_date")
+    
+    with col2:
+        st.subheader("👥 Team Settings")
+        team_name = st.text_input("Team Name:", value="PHHS Bowling Team", key="settings_team_name")
+        max_players = st.number_input("Max Players:", min_value=1, value=20, key="settings_max_players")
+    
+    if st.button("💾 Save Settings"):
+        st.success("✅ Settings saved!")
 
 # Footer
 st.divider()
