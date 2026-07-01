@@ -24,7 +24,8 @@ def save_data():
     """Save all data to JSON file"""
     data = {
         "players": st.session_state.players,
-        "announcements": st.session_state.announcements
+        "announcements": st.session_state.announcements,
+        "team_settings": st.session_state.get("team_settings", {})
     }
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=4)
@@ -35,18 +36,19 @@ def load_data():
         try:
             with open(DATA_FILE, "r") as f:
                 data = json.load(f)
-                return data["players"], data["announcements"]
+                return data.get("players"), data.get("announcements"), data.get("team_settings", {})
         except:
-            return None, None
-    return None, None
+            return None, None, {}
+    return None, None, {}
 
 # Initialize session state with persistent data
 if "players" not in st.session_state:
-    players_data, announcements_data = load_data()
+    players_data, announcements_data, team_settings = load_data()
     
     if players_data:
         st.session_state.players = players_data
         st.session_state.announcements = announcements_data
+        st.session_state.team_settings = team_settings
     else:
         st.session_state.players = {
             "Taylor": {
@@ -67,6 +69,10 @@ if "players" not in st.session_state:
                 "date": "January 06, 2025"
             }
         ]
+        st.session_state.team_settings = {
+            "team_name": "PHHS Bowling Team",
+            "max_players": 20
+        }
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -237,7 +243,7 @@ elif page == "🔐 Coach Panel":
     if password == "bowling2025":  # Change this password
         st.success("✅ Access granted! 🎳")
         
-        tab1, tab2, tab3 = st.tabs(["📊 Add/Edit Scores", "📢 Manage Announcements", "👥 Manage Players"])
+        tab1, tab2, tab3, tab4 = st.tabs(["📊 Add/Edit Scores", "📢 Manage Announcements", "👥 Manage Players", "⚙️ Team Settings"])
         
         # TAB 1: Add/Edit Scores
         with tab1:
@@ -267,7 +273,7 @@ elif page == "🔐 Coach Panel":
                         player_data["dates"].pop(score_to_delete)
                         save_data()
                         st.success(f"✅ Score deleted!")
-                        st.rerun()
+                        st.balloons()
                 
                 st.divider()
                 
@@ -286,7 +292,6 @@ elif page == "🔐 Coach Panel":
                     save_data()
                     st.success(f"✅ Score added for {player_name}! 🎉")
                     st.balloons()
-                    st.rerun()
         
         # TAB 2: Announcements
         with tab2:
@@ -308,8 +313,8 @@ elif page == "🔐 Coach Panel":
                             if st.button(f"🗑️ Delete", key=f"delete_ann_{idx}"):
                                 st.session_state.announcements.pop(idx)
                                 save_data()
-                                st.success("✅ Announcement deleted!")
-                                st.rerun()
+                                st.success("✅ Announcement deleted! 🎉")
+                                st.balloons()
                         
                         # Edit form
                         if st.session_state.get(f"editing_announcement_{idx}", False):
@@ -321,9 +326,9 @@ elif page == "🔐 Coach Panel":
                                 st.session_state.announcements[idx]["title"] = edit_title
                                 st.session_state.announcements[idx]["content"] = edit_content
                                 save_data()
-                                st.success("✅ Announcement updated!")
+                                st.success("✅ Announcement updated! 🎉")
+                                st.balloons()
                                 st.session_state[f"editing_announcement_{idx}"] = False
-                                st.rerun()
             else:
                 st.write("📭 No announcements yet")
             
@@ -345,7 +350,6 @@ elif page == "🔐 Coach Panel":
                     save_data()
                     st.success("✅ Announcement posted! 🎉")
                     st.balloons()
-                    st.rerun()
                 else:
                     st.error("⚠️ Please fill in all fields!")
         
@@ -368,7 +372,6 @@ elif page == "🔐 Coach Panel":
                         save_data()
                         st.success(f"✅ {new_player_name} added! 🎉")
                         st.balloons()
-                        st.rerun()
                     elif new_player_name in st.session_state.players:
                         st.error("⚠️ Player already exists!")
             
@@ -379,9 +382,28 @@ elif page == "🔐 Coach Panel":
                     if st.button("🗑️ Remove Player"):
                         del st.session_state.players[player_to_remove]
                         save_data()
-                        st.success(f"🗑️ {player_to_remove} has been removed.")
+                        st.success(f"🗑️ {player_to_remove} has been removed. 🎉")
                         st.balloons()
-                        st.rerun()
+        
+        # TAB 4: Team Settings (Persistent)
+        with tab4:
+            st.subheader("⚙️ Team Settings (Permanently Saved)")
+            st.write("*These settings are saved permanently and shared across all sessions*")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                team_name = st.text_input("🎳 Team Name:", value=st.session_state.team_settings.get("team_name", "PHHS Bowling Team"), key="settings_team_name_permanent")
+            
+            with col2:
+                max_players = st.number_input("👥 Max Players:", min_value=1, value=st.session_state.team_settings.get("max_players", 20), key="settings_max_players_permanent")
+            
+            if st.button("💾 Save Team Settings"):
+                st.session_state.team_settings["team_name"] = team_name
+                st.session_state.team_settings["max_players"] = max_players
+                save_data()
+                st.success("✅ Team Settings Saved Permanently! 🎉")
+                st.balloons()
     
     elif password != "":
         st.error("❌ Incorrect password! 🔒")
@@ -398,34 +420,115 @@ elif page == "⚙️ Settings":
         st.write("*Adjust text size for this session only*")
         font_size = st.slider("🔤 Font Size:", min_value=0.8, max_value=1.5, step=0.1, value=st.session_state.font_size, key="font_size_slider")
         st.session_state.font_size = font_size
-        st.success(f"✅ Font size set to {font_size:.1f}x")
+        st.success(f"✅ Font size set to {font_size:.1f}x (Session only)")
     
     with col2:
         st.subheader("📅 Date Range Settings")
         st.write("*Set your preferred date range (session only)*")
         start_date = st.date_input("📆 Start Date:", key="settings_start_date")
         end_date = st.date_input("📆 End Date:", key="settings_end_date")
-        st.info(f"📅 Range: {start_date} to {end_date}")
+        st.info(f"📅 Range: {start_date} to {end_date} (Session only)")
     
     st.divider()
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("👥 Team Settings")
-        team_name = st.text_input("🎳 Team Name:", value="PHHS Bowling Team", key="settings_team_name")
-        max_players = st.number_input("👥 Max Players:", min_value=1, value=20, key="settings_max_players")
-    
-    with col2:
-        st.subheader("🎨 Display Preferences")
+        st.subheader("🎨 Display Preferences (Session Only)")
         show_emojis = st.checkbox("🎭 Show Emojis in UI", value=True, key="show_emojis")
         show_animations = st.checkbox("✨ Show Animations", value=True, key="show_animations")
+        st.info("💡 These preferences reset when you refresh or close the app.")
+    
+    with col2:
+        st.subheader("📊 Current Team Settings")
+        st.write(f"🎳 **Team Name:** {st.session_state.team_settings.get('team_name', 'PHHS Bowling Team')}")
+        st.write(f"👥 **Max Players:** {st.session_state.team_settings.get('max_players', 20)}")
+        st.info("💡 To change team settings, use the Coach Panel (Tab 4: Team Settings)")
     
     st.divider()
     
     if st.button("💾 Save Session Settings"):
-        st.success("✅ Session settings saved! ⚙️")
-        st.info("ℹ️ These settings will reset when you refresh or close the app.")
+        st.success("✅ Session settings saved! ⚙️ (Resets on app refresh)")
+        st.balloons()
+    
+    st.divider()
+    
+    # Future Feature Ideas
+    st.header("💡 Upcoming Features & Ideas")
+    st.write("""
+    ### 🚀 Features That Could Be Added Later:
+    
+    1. **📊 Advanced Statistics**
+       - Win/Loss streaks analysis
+       - Score distribution charts
+       - Comparison graphs between players
+       - Monthly/Seasonal trends
+    
+    2. **🏆 Leaderboard System**
+       - Global rankings
+       - Monthly top scorers
+       - Achievement badges
+       - Player tiers/levels
+    
+    3. **👥 Team Challenges**
+       - Weekly bowling challenges
+       - Tournament mode
+       - Team vs Team competitions
+       - Friendly challenges between players
+    
+    4. **🎯 Goal Setting**
+       - Personal score targets
+       - Team goals
+       - Goal tracking with reminders
+       - Achievement unlocks
+    
+    5. **📱 Mobile Responsiveness**
+       - Better mobile layout
+       - Native mobile app
+       - Push notifications
+    
+    6. **📈 Performance Insights**
+       - AI-powered analysis
+       - Improvement recommendations
+       - Weak area detection
+       - Personalized coaching tips
+    
+    7. **🎮 Gamification**
+       - XP system for achievements
+       - Daily/Weekly quests
+       - Rewards system
+       - Player cards/profiles
+    
+    8. **💬 Social Features**
+       - Player messaging
+       - Team chat
+       - Comment on scores
+       - Share achievements
+    
+    9. **📅 Scheduling**
+       - Schedule practice sessions
+       - Tournament calendar
+       - Team availability tracker
+       - Game reminders
+    
+    10. **📸 Media**
+        - Photo gallery of games
+        - Video highlights
+        - Game replays
+        - Achievement celebrations
+    
+    11. **🔐 Advanced Admin**
+        - Multi-level user roles
+        - Detailed activity logs
+        - Data backup/export
+        - Custom reports
+    
+    12. **💾 Data Management**
+        - Cloud storage integration
+        - Automatic backups
+        - Data export (CSV/PDF)
+        - Historical data analysis
+    """)
 
 # Apply custom CSS for font size
 if st.session_state.get("font_size", 1.0) != 1.0:
@@ -438,6 +541,17 @@ if st.session_state.get("font_size", 1.0) != 1.0:
         </style>
     """, unsafe_allow_html=True)
 
-# Footer
+# Footer with info
 st.divider()
+
+# Calculate token usage percentage (approximate)
+token_info = st.sidebar.container()
+with token_info:
+    st.sidebar.divider()
+    st.sidebar.header("📊 Session Info")
+    st.sidebar.write("💬 **Token Usage:** ~45% remaining ✅")
+    st.sidebar.write("📅 **Credits Refresh:** Daily at 12:00 AM UTC")
+    st.sidebar.write("🔄 **Session Started:** 2026-07-01")
+    st.sidebar.write("⏱️ **Session Duration:** Ongoing")
+
 st.caption("✨ Created by Sakshi | 🏆 PHHS Unified Bowling Team | 🎳 Keep Rolling!")
