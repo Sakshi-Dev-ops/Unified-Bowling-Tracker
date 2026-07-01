@@ -471,8 +471,6 @@ token_info = st.sidebar.container()
 with token_info:
     st.sidebar.divider()
     st.sidebar.header("📊 Session Info")
-    st.sidebar.write("💬 **Token Usage:** ~45% remaining ✅")
-    st.sidebar.write("📅 **Credits Refresh:** Daily at 12:00 AM UTC")
     st.sidebar.write("🔄 **Session Started:** 2026-07-01")
     st.sidebar.write("⏱️ **Session Duration:** Ongoing")
 
