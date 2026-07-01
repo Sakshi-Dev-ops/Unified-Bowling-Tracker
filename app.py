@@ -476,4 +476,4 @@ with token_info:
     st.sidebar.write("🔄 **Session Started:** 2026-07-01")
     st.sidebar.write("⏱️ **Session Duration:** Ongoing")
 
-st.caption("✨ Created by Sakshi | 🏆 PHHS Unified Bowling Team | 🎳 Keep Rolling!")
+st.caption("🎳 | ✨ Created by Sakshi ✨ | 🏆 PHHS Unified Bowling Team  🏆 | 🎳")
