@@ -7,7 +7,7 @@ import os
 
 # Page config
 st.set_page_config(
-    page_title="🎳 PHHS Bowling Tracker",
+    page_title=" PHHS Bowling Tracker",
     page_icon="🎳",
     layout="wide",
     initial_sidebar_state="expanded"
