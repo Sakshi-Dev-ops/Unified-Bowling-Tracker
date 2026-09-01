@@ -4,7 +4,6 @@ import plotly.graph_objects as go
 from datetime import datetime
 import json
 import os
-import re
 
 # Page config
 st.set_page_config(
@@ -78,8 +77,8 @@ if "players" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "zoom_level" not in st.session_state:
-    st.session_state.zoom_level = 100  # 100 = 100%
+if "font_size" not in st.session_state:
+    st.session_state.font_size = 1.0
 
 if "show_emojis" not in st.session_state:
     st.session_state.show_emojis = True
@@ -98,67 +97,42 @@ def detect_milestones(player_name, scores, dates):
     
     # First game over 100
     if any(score > 100 for score in scores):
-        milestone_text = "First game over 100!"
-        milestones.append(("🎯", milestone_text) if st.session_state.show_emojis else ("", milestone_text))
+        milestones.append("🎯 First game over 100!")
     
     # Perfect game (300)
     if 300 in scores:
-        milestone_text = "Perfect Game!"
-        milestones.append(("🔥", milestone_text) if st.session_state.show_emojis else ("", milestone_text))
+        milestones.append("🔥 Perfect Game!")
     
     # Improving trend
     if len(scores) >= 3:
         recent_three = scores[-3:]
         if recent_three[0] < recent_three[1] < recent_three[2]:
-            milestone_text = "3-Game Improvement Streak!"
-            milestones.append(("📈", milestone_text) if st.session_state.show_emojis else ("", milestone_text))
+            milestones.append("📈 3-Game Improvement Streak!")
         
         # Check for consistency
         if len(scores) >= 5:
             recent_five = scores[-5:]
             avg = sum(recent_five) / len(recent_five)
             if all(abs(s - avg) <= 10 for s in recent_five):
-                milestone_text = "Consistent Performer!"
-                milestones.append(("⭐", milestone_text) if st.session_state.show_emojis else ("", milestone_text))
+                milestones.append("⭐ Consistent Performer!")
     
     # High score achievement
     if max(scores) >= 200:
-        milestone_text = "Elite Scorer!"
-        milestones.append(("🏅", milestone_text) if st.session_state.show_emojis else ("", milestone_text))
+        milestones.append("🏅 Elite Scorer!")
     
     # Century mark (100+ average)
     if len(scores) >= 3:
         avg = sum(scores) / len(scores)
         if avg >= 150:
-            milestone_text = "Century Achiever!"
-            milestones.append(("👑", milestone_text) if st.session_state.show_emojis else ("", milestone_text))
+            milestones.append("👑 Century Achiever!")
     
     # Games played milestone
     if len(scores) == 10:
-        milestone_text = "10 Games Milestone!"
-        milestones.append(("🎮", milestone_text) if st.session_state.show_emojis else ("", milestone_text))
+        milestones.append("🎮 10 Games Milestone!")
     elif len(scores) == 5:
-        milestone_text = "5 Games Milestone!"
-        milestones.append(("🎮", milestone_text) if st.session_state.show_emojis else ("", milestone_text))
+        milestones.append("🎮 5 Games Milestone!")
     
     return milestones
-
-# Apply zoom CSS FIRST before rendering anything
-zoom_scale = st.session_state.zoom_level / 100
-st.markdown(f"""
-    <style>
-        .main {{
-            transform: scale({zoom_scale});
-            transform-origin: top left;
-            width: {100 / zoom_scale}%;
-            height: {100 / zoom_scale}%;
-        }}
-        .sidebar {{
-            transform: scale({zoom_scale});
-            transform-origin: top left;
-        }}
-    </style>
-""", unsafe_allow_html=True)
 
 # Sidebar for navigation
 st.sidebar.header("📊 Navigation")
@@ -176,14 +150,11 @@ if page == "🏠 Dashboard":
         all_scores.extend(player["scores"])
     
     with col1:
-        label = "Total Players" if not st.session_state.show_emojis else "👥 Total Players"
-        st.metric(label, len(st.session_state.players))
+        st.metric("👥 Total Players", len(st.session_state.players))
     with col2:
-        label = "Avg Team Score" if not st.session_state.show_emojis else "📊 Avg Team Score"
-        st.metric(label, f"{sum(all_scores)/len(all_scores):.1f}" if all_scores else "N/A")
+        st.metric("📊 Avg Team Score", f"{sum(all_scores)/len(all_scores):.1f}" if all_scores else "N/A")
     with col3:
-        label = "Highest Score" if not st.session_state.show_emojis else "🏅 Highest Score"
-        st.metric(label, max(all_scores) if all_scores else "N/A")
+        st.metric("🏅 Highest Score", max(all_scores) if all_scores else "N/A")
     
     st.divider()
     
@@ -191,20 +162,21 @@ if page == "🏠 Dashboard":
     st.header("📈 Player Score Progress & Achievements")
     
     for player_name, player_data in st.session_state.players.items():
-        expander_label = f"{player_name} - {len(player_data['scores'])} games"
-        if st.session_state.show_emojis:
-            expander_label = f"📊 {expander_label} 🎮"
-        
-        with st.expander(expander_label):
+        with st.expander(f"📊 {player_name} - 🎮 {len(player_data['scores'])} games"):
             
             # Personal Milestones for this player
             milestones = detect_milestones(player_name, player_data["scores"], player_data["dates"])
             
             if milestones:
                 st.subheader("🎖️ Personal Milestones")
-                for emoji, milestone_text in milestones:
-                    display_text = f"{emoji} {milestone_text}".strip()
-                    st.success(display_text)
+                for milestone in milestones:
+                    if st.session_state.show_emojis:
+                        st.success(milestone)
+                    else:
+                        # Remove emojis
+                        import re
+                        clean_milestone = re.sub(r'[^\w\s]', '', milestone)
+                        st.success(clean_milestone)
             
             # Score trend chart
             fig = go.Figure()
@@ -216,9 +188,8 @@ if page == "🏠 Dashboard":
                 line=dict(color='#00D9FF', width=3),
                 marker=dict(size=10)
             ))
-            chart_title = f"{player_name}'s 📈 Scoring Trend"
             fig.update_layout(
-                title=chart_title,
+                title=f"{player_name}'s 📈 Scoring Trend",
                 xaxis_title="📅 Date",
                 yaxis_title="🎳 Score",
                 height=400,
@@ -230,14 +201,11 @@ if page == "🏠 Dashboard":
             col1, col2, col3 = st.columns(3)
             avg = sum(player_data["scores"]) / len(player_data["scores"]) if player_data["scores"] else 0
             with col1:
-                label = "Average Score" if not st.session_state.show_emojis else "📊 Average Score"
-                st.metric(label, f"{avg:.1f}")
+                st.metric("📊 Average Score", f"{avg:.1f}")
             with col2:
-                label = "Best Score" if not st.session_state.show_emojis else "🔥 Best Score"
-                st.metric(label, max(player_data["scores"]) if player_data["scores"] else "N/A")
+                st.metric("🔥 Best Score", max(player_data["scores"]) if player_data["scores"] else "N/A")
             with col3:
-                label = "Days at Team" if not st.session_state.show_emojis else "📅 Days at Team"
-                st.metric(label, player_data['days_at_team'])
+                st.metric("📅 Days at Team", player_data['days_at_team'])
     
     st.divider()
     
@@ -245,8 +213,7 @@ if page == "🏠 Dashboard":
     st.header("📢 Announcements & Updates")
     if st.session_state.announcements:
         for announcement in st.session_state.announcements:
-            ann_header = f"📌 **{announcement['title']}** *(Posted: {announcement['date']})*"
-            st.info(f"{ann_header}\n\n{announcement['content']}")
+            st.info(f"📌 **{announcement['title']}** *(Posted: {announcement['date']})*\n\n{announcement['content']}")
     else:
         st.write("📭 No announcements yet")
     
@@ -456,32 +423,16 @@ elif page == "🔐 Coach Panel":
 # ============ SETTINGS PAGE ============
 elif page == "⚙️ Settings":
     st.header("⚙️ Settings & Preferences")
-    
-    col_session, col_info = st.columns([2, 1])
-    
-    with col_session:
-        st.write("**Session-Only Settings** *(Reset when you close/refresh the app)*")
-    with col_info:
-        st.info("💡 Each device has its own settings")
+    st.write("*Note: These settings are only active for your current session. Changes reset when you close or refresh the app.*")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("🔍 Zoom Level (Like Google)")
-        st.write("*Adjust page zoom for this session only*")
-        
-        # Google-style zoom: 75%, 90%, 100%, 110%, 125%, 150%
-        zoom_options = [75, 90, 100, 110, 125, 150]
-        zoom_value = st.select_slider(
-            "Zoom %:",
-            options=zoom_options,
-            value=st.session_state.zoom_level,
-            key="zoom_slider"
-        )
-        if zoom_value != st.session_state.zoom_level:
-            st.session_state.zoom_level = zoom_value
-            st.rerun()
-        st.success(f"✅ Zoom set to {zoom_value}% (Session only)")
+        st.subheader("📝 Text Size Control")
+        st.write("*Adjust text size for this session only*")
+        font_size = st.slider("📏 Text Size:", min_value=0.8, max_value=1.5, step=0.05, value=st.session_state.font_size, key="font_size_slider")
+        st.session_state.font_size = font_size
+        st.success(f"✅ Text size set to {font_size:.2f}x (Session only)")
     
     with col2:
         st.subheader("📅 Date Range Settings")
@@ -502,25 +453,18 @@ elif page == "⚙️ Settings":
         # Update session state when checkboxes change
         if show_emojis != st.session_state.show_emojis:
             st.session_state.show_emojis = show_emojis
-            st.rerun()
+            st.success(f"✅ Emojis {'enabled' if show_emojis else 'disabled'}!")
         
         if show_animations != st.session_state.show_animations:
             st.session_state.show_animations = show_animations
             st.success(f"✅ Animations {'enabled' if show_animations else 'disabled'}!")
         
-        st.info("💡 Independent settings per browser/device session.")
+        st.info("💡 These preferences reset when you refresh or close the app.")
     
     with col2:
         st.subheader("📊 Current Team Settings")
-        team_name = st.session_state.team_settings.get('team_name', 'PHHS Bowling Team')
-        max_players = st.session_state.team_settings.get('max_players', 20)
-        
-        if st.session_state.show_emojis:
-            st.write(f"🎳 **Team Name:** {team_name}")
-            st.write(f"👥 **Max Players:** {max_players}")
-        else:
-            st.write(f"**Team Name:** {team_name}")
-            st.write(f"**Max Players:** {max_players}")
+        st.write(f"🎳 **Team Name:** {st.session_state.team_settings.get('team_name', 'PHHS Bowling Team')}")
+        st.write(f"👥 **Max Players:** {st.session_state.team_settings.get('max_players', 20)}")
     
     st.divider()
     
@@ -529,6 +473,17 @@ elif page == "⚙️ Settings":
         st.balloons()
     
     st.divider()
+    
+    # Apply custom CSS for text size
+if st.session_state.get("font_size", 1.0) != 1.0:
+    font_size = st.session_state.font_size
+    st.markdown(f"""
+        <style>
+            * {{
+                font-size: {font_size}em !important;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
 
 # Apply animation toggle via CSS
 if not st.session_state.get("show_animations", True):
