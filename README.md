@@ -23,7 +23,7 @@ A data analytics dashboard built with Python and Streamlit to track performance 
 
 ### Running Locally
 ```bash
-streamlit run app.py
+[streamlit run app.py](https://unified-bowling-tracker-oerembrmad7ym5r3qtei4z.streamlit.app/)
 ```
 
 ### Deployment
