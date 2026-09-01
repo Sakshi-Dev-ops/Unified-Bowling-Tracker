@@ -80,6 +80,12 @@ if "messages" not in st.session_state:
 if "font_size" not in st.session_state:
     st.session_state.font_size = 1.0
 
+if "show_emojis" not in st.session_state:
+    st.session_state.show_emojis = True
+
+if "show_animations" not in st.session_state:
+    st.session_state.show_animations = True
+
 # ============ HELPER FUNCTIONS ============
 
 def detect_milestones(player_name, scores, dates):
@@ -411,16 +417,23 @@ elif page == "🔐 Coach Panel":
 # ============ SETTINGS PAGE ============
 elif page == "⚙️ Settings":
     st.header("⚙️ Settings & Preferences")
-    st.write("*Note: These settings are only active for your current session. Changes reset when you close or refresh the app.*")
+    
+    col_session, col_info = st.columns([2, 1])
+    
+    with col_session:
+        st.write("**Session-Only Settings** *(Reset when you close/refresh the app)*")
+    with col_info:
+        st.info("💡 Each device has its own settings")
     
     col1, col2 = st.columns(2)
     
     with col1:
         st.subheader("📝 Font Size Control")
         st.write("*Adjust text size for this session only*")
-        font_size = st.slider("🔤 Font Size:", min_value=0.8, max_value=1.5, step=0.1, value=st.session_state.font_size, key="font_size_slider")
+        # Updated slider with finer granularity - 0.05 step size
+        font_size = st.slider("🔤 Font Size:", min_value=0.8, max_value=1.5, step=0.05, value=st.session_state.font_size, key="font_size_slider")
         st.session_state.font_size = font_size
-        st.success(f"✅ Font size set to {font_size:.1f}x (Session only)")
+        st.success(f"✅ Font size set to {font_size:.2f}x (Session only)")
     
     with col2:
         st.subheader("📅 Date Range Settings")
@@ -435,14 +448,24 @@ elif page == "⚙️ Settings":
     
     with col1:
         st.subheader("🎨 Display Preferences (Session Only)")
-        show_emojis = st.checkbox("🎭 Show Emojis in UI", value=True, key="show_emojis")
-        show_animations = st.checkbox("✨ Show Animations", value=True, key="show_animations")
-        st.info("💡 These preferences reset when you refresh or close the app.")
+        show_emojis = st.checkbox("🎭 Show Emojis in UI", value=st.session_state.show_emojis, key="show_emojis_checkbox")
+        show_animations = st.checkbox("✨ Show Animations", value=st.session_state.show_animations, key="show_animations_checkbox")
+        
+        # Update session state when checkboxes change
+        if show_emojis != st.session_state.show_emojis:
+            st.session_state.show_emojis = show_emojis
+            st.success(f"✅ Emojis {'enabled' if show_emojis else 'disabled'}!")
+        
+        if show_animations != st.session_state.show_animations:
+            st.session_state.show_animations = show_animations
+            st.success(f"✅ Animations {'enabled' if show_animations else 'disabled'}!")
+        
+        st.info("💡 Independent settings per browser/device session.")
     
     with col2:
         st.subheader("📊 Current Team Settings")
-        st.write(f"🎳 **Team Name:** {st.session_state.team_settings.get('team_name', 'PHHS Bowling Team')}")
-        st.write(f"👥 **Max Players:** {st.session_state.team_settings.get('max_players', 20)}")
+        st.write(f"{'🎳' if st.session_state.show_emojis else ''} **Team Name:** {st.session_state.team_settings.get('team_name', 'PHHS Bowling Team')}")
+        st.write(f"{'👥' if st.session_state.show_emojis else ''} **Max Players:** {st.session_state.team_settings.get('max_players', 20)}")
     
     st.divider()
     
@@ -451,8 +474,9 @@ elif page == "⚙️ Settings":
         st.balloons()
     
     st.divider()
-    
-    # Apply custom CSS for font size
+
+# ============ APPLY DISPLAY PREFERENCES ============
+# Apply custom CSS for font size
 if st.session_state.get("font_size", 1.0) != 1.0:
     font_size = st.session_state.font_size
     st.markdown(f"""
@@ -460,6 +484,39 @@ if st.session_state.get("font_size", 1.0) != 1.0:
             * {{
                 font-size: {font_size}em !important;
             }}
+        </style>
+    """, unsafe_allow_html=True)
+
+# Hide emojis if disabled
+if not st.session_state.get("show_emojis", True):
+    st.markdown("""
+        <style>
+            /* Hide emojis by filtering common emoji patterns */
+            body, div, p, h1, h2, h3, h4, h5, h6, span, a {
+                font-family: sans-serif !important;
+            }
+            /* Remove emoji rendering - display as text alternatives */
+            .stMetricValue, .stMetric {
+                font-size: inherit !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+# Apply animation toggle via CSS
+if not st.session_state.get("show_animations", True):
+    st.markdown("""
+        <style>
+            /* Disable all animations when toggle is off */
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+            .stSpinner, .stProgress {
+                display: none !important;
+            }
+            .balloon {
+                display: none !important;
+            }
         </style>
     """, unsafe_allow_html=True)
 
