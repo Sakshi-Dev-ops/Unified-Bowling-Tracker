@@ -21,18 +21,13 @@ A data analytics dashboard built with Python and Streamlit to track performance 
 
 ## Getting Started
 
-### Installation
-```bash
-pip install -r requirements.txt
-```
-
 ### Running Locally
 ```bash
 streamlit run app.py
 ```
 
 ### Deployment
-This app is designed to run on Streamlit Cloud. Push to GitHub and connect your repository to deploy automatically.
+This app is designed to run on Streamlit Cloud. Click on the link above to go to the website
 
 ## Coach Password
 **Default:** `bowling2025` (change in app.py for security)
