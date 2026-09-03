@@ -30,7 +30,7 @@ https://unified-bowling-tracker-oerembrmad7ym5r3qtei4z.streamlit.app
 This app is designed to run on Streamlit Cloud. Click on the link above to go to the website
 
 ## Coach Password
-**Default:** `bowling2025` (change in app.py for security)
+**Default:** `bowling2025` (change in app.py line 225 for security)
 
 ---
 
